@@ -24,5 +24,22 @@
       <!-- カメラ -->
       <a-entity camera></a-entity>
     </a-scene>
+    
+     <script>
+      const marker = document.querySelector("#hiro");
+      const model = document.querySelector("#url");
+
+      // マーカーが見つかったとき
+      marker.addEventListener("markerFound", () => {
+        console.log("✅ マーカーを検出しました");
+        model.setAttribute("visible", true); // 念のため可視化
+      });
+
+      // マーカーを見失っても非表示にしない
+      marker.addEventListener("markerLost", () => {
+        console.log("⚠️ マーカーを見失いましたが、モデルは保持します");
+        model.setAttribute("visible", true);
+      });
   </body>
 </html>
+
