@@ -2,9 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>A-Frame + AR.js 固定表示</title>
+    <title>A-Frame + AR.js 固定表示（hiroマーカー版）</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/3.4.2/aframe/build/aframe-ar.min.js"></script>
+    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.min.js"></script>
   </head>
   <body style="margin: 0; overflow: hidden;">
     <a-scene
@@ -15,33 +15,37 @@
       <!-- カメラ -->
       <a-entity camera></a-entity>
 
-      <!-- マーカー定義 -->
-      <a-marker type="pattern" url="pattern-marker.patt" id="hiroMarker">
-        <a-entity id="chaeiModel" gltf-model="url(chaei.glb)" scale="0.5 0.5 0.5"></a-entity>
+      <!-- hiroマーカー -->
+      <a-marker type="pattern" url="hiro.patt" id="marker">
+        <a-entity id="tempModel" gltf-model="url(models/chaei.glb)" scale="0.5 0.5 0.5"></a-entity>
       </a-marker>
     </a-scene>
 
     <script>
-      const marker = document.querySelector("#hiroMarker");
-      const model = document.querySelector("#chaeiModel");
-      let fixed = false; // 一度でも認識したかどうか
-      let fixedPosition, fixedRotation;
+      const marker = document.querySelector("#marker");
+      const scene = document.querySelector("a-scene");
+      const tempModel = document.querySelector("#tempModel");
+
+      let fixedModel = null;
 
       marker.addEventListener("markerFound", () => {
-        if (!fixed) {
-          fixed = true;
-          // 現在位置を保存
-          fixedPosition = model.object3D.position.clone();
-          fixedRotation = model.object3D.rotation.clone();
-        }
-      });
+        console.log("📸 マーカー検出！");
+        if (!fixedModel) {
+          // 現在の位置と回転を取得
+          const position = tempModel.object3D.getWorldPosition(new THREE.Vector3());
+          const rotation = tempModel.object3D.getWorldRotation(new THREE.Euler());
 
-      marker.addEventListener("markerLost", () => {
-        if (fixed) {
-          // マーカーを離してもモデルを残す
-          model.object3D.position.copy(fixedPosition);
-          model.object3D.rotation.copy(fixedRotation);
-          model.object3D.visible = true;
+          // 新しい固定モデルを作成
+          fixedModel = document.createElement("a-entity");
+          fixedModel.setAttribute("gltf-model", "url(models/chaei.glb)");
+          fixedModel.setAttribute("scale", "0.5 0.5 0.5");
+          fixedModel.object3D.position.copy(position);
+          fixedModel.object3D.rotation.copy(rotation);
+
+          // シーン直下に追加（マーカーの外に固定）
+          scene.appendChild(fixedModel);
+
+          console.log("📍 モデルを固定しました！");
         }
       });
     </script>
