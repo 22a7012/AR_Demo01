@@ -2,18 +2,16 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>A-Frame + AR.js 固定表示（マーカー保持）</title>
-    <!-- A-Frame本体 -->
+    <title>A-Frame + AR.js 固定表示（安定版）</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <!-- AR.js拡張 -->
-    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
   </head>
 
   <body style="margin: 0; overflow: hidden;">
     <a-scene embedded arjs>
-      <!-- マーカー -->
+      <!-- Hiroマーカー -->
       <a-marker preset="hiro" id="marker" emitevents="true">
-        <a-entity 
+        <a-entity
           id="model"
           gltf-model="url(models/chaei.glb)"
           position="0 0 0"
@@ -31,42 +29,52 @@
       const marker = document.querySelector('#marker');
       const model = document.querySelector('#model');
       const scene = document.querySelector('a-scene');
-      let hasPlaced = false; // モデルを固定したかどうか
-      let fixedModel = null; // マーカーから独立させたモデル
+      let hasPlaced = false;
+      let fixedModel = null;
 
+      // ① モデルのロード完了を待つ
+      model.addEventListener('model-loaded', () => {
+        console.log('✅ モデル読み込み完了');
+      });
+
+      // ② マーカーが見つかった時
       marker.addEventListener('markerFound', () => {
-        console.log('✅ マーカー検出');
+        console.log('📡 マーカー検出');
 
-        // まだ固定されていないときだけ処理
+        // モデルがまだロードされていないなら待機
+        if (!model.getObject3D('mesh')) {
+          console.warn('⚠️ モデルがまだ読み込まれていません');
+          return;
+        }
+
+        // まだ固定されていないなら一度だけ実行
         if (!hasPlaced) {
-          // ① マーカー上のモデルを取得してクローンする
+          // クローン生成
           const clone = model.cloneNode(true);
           clone.setAttribute('id', 'fixedModel');
           clone.setAttribute('visible', 'true');
 
-          // ② マーカーのワールド座標を取得してクローンに適用
+          // 座標をマーカーのワールド座標で固定
           const markerPos = new THREE.Vector3();
-          const markerRot = new THREE.Euler();
+          const markerQuat = new THREE.Quaternion();
           marker.object3D.getWorldPosition(markerPos);
-          marker.object3D.getWorldRotation(markerRot);
+          marker.object3D.getWorldQuaternion(markerQuat);
 
           clone.object3D.position.copy(markerPos);
-          clone.object3D.rotation.copy(markerRot);
+          clone.object3D.quaternion.copy(markerQuat);
 
-          // ③ クローンをシーン直下に追加（マーカーの外に出す）
+          // シーンに追加（マーカー外）
           scene.appendChild(clone);
           fixedModel = clone;
           hasPlaced = true;
 
-          console.log('📍 モデルを固定しました');
+          console.log('📍 モデルをマーカー位置に固定しました');
         }
       });
 
       marker.addEventListener('markerLost', () => {
-        console.log('📡 マーカー見失い → 何もしない（固定モデルは残る）');
+        console.log('🕶️ マーカー見失い（固定モデルは残る）');
       });
     </script>
   </body>
 </html>
-
-
