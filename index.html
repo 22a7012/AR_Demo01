@@ -2,14 +2,14 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>A-Frame + AR.js 固定表示（マーカー基準）</title>
+    <title>A-Frame + AR.js 固定表示（マーカー基準・安定版）</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
   </head>
 
   <body style="margin: 0; overflow: hidden;">
     <a-scene embedded arjs="sourceType: webcam;">
-      <!-- マーカー -->
+      <!-- 🔹 マーカー -->
       <a-marker preset="hiro" id="marker" emitevents="true">
         <a-entity 
           id="model"
@@ -30,25 +30,38 @@
       const scene = document.querySelector('a-scene');
       let hasFixed = false;
 
+      // ✅ AR.jsが初期化されてから処理開始
+      scene.addEventListener('renderstart', () => {
+        console.log('AR.js initialized');
+      });
+
       marker.addEventListener('markerFound', () => {
         if (!hasFixed) {
-          // --- 現在のマーカーの位置・回転を取得 ---
-          const markerPosition = marker.object3D.getWorldPosition(new THREE.Vector3());
-          const markerRotation = marker.object3D.getWorldRotation(new THREE.Euler());
-
-          // --- モデルをシーン直下に複製・固定 ---
-          scene.object3D.attach(model.object3D); // マーカーから切り離してワールド空間に配置
-          model.object3D.position.copy(markerPosition);
-          model.object3D.rotation.copy(markerRotation);
+          // いったんモデルを表示してワールド座標を正しく取れるようにする
           model.setAttribute('visible', 'true');
 
-          hasFixed = true;
-          console.log('✅ モデルをマーカー位置に固定表示');
+          setTimeout(() => {
+            // --- マーカーのワールド位置と回転を取得 ---
+            const markerPosition = new THREE.Vector3();
+            const markerRotation = new THREE.Euler();
+            marker.object3D.getWorldPosition(markerPosition);
+            marker.object3D.getWorldRotation(markerRotation);
+
+            // --- モデルをシーン直下に移動（マーカー追従を外す）---
+            scene.object3D.attach(model.object3D);
+
+            // --- モデルに位置と回転をコピー ---
+            model.object3D.position.copy(markerPosition);
+            model.object3D.rotation.copy(markerRotation);
+
+            console.log('✅ モデル固定完了', markerPosition);
+            hasFixed = true;
+          }, 500); // 少し待ってから座標を取得
         }
       });
 
       marker.addEventListener('markerLost', () => {
-        console.log('ℹ️ マーカー見失い → モデルは固定されたまま');
+        console.log('ℹ️ マーカー見失い → モデル保持');
       });
     </script>
   </body>
