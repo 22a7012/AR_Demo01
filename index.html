@@ -2,66 +2,47 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>A-Frame + AR.js 固定表示（マーカー完全切り離し）</title>
+    <title>A-Frame + AR.js 固定表示</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
+    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/3.4.2/aframe/build/aframe-ar.min.js"></script>
   </head>
-
   <body style="margin: 0; overflow: hidden;">
-    <a-scene embedded arjs="sourceType: webcam;">
-      <!-- 🔹 マーカー -->
-      <a-marker preset="hiro" id="marker" emitevents="true">
-        <a-entity 
-          id="model-template"
-          gltf-model="url(models/chaei.glb)"
-          position="0 0 0"
-          rotation="0 180 0"
-          scale="0.5 0.5 0.5"
-          visible="false">
-        </a-entity>
-      </a-marker>
-
-      <!-- 🔹 固定表示用の空ノード -->
-      <a-entity id="fixed-container"></a-entity>
-
+    <a-scene
+      vr-mode-ui="enabled: false;"
+      embedded
+      arjs="sourceType: webcam; debugUIEnabled: false;">
+      
+      <!-- カメラ -->
       <a-entity camera></a-entity>
+
+      <!-- マーカー定義 -->
+      <a-marker type="pattern" url="pattern-marker.patt" id="hiroMarker">
+        <a-entity id="chaeiModel" gltf-model="url(chaei.glb)" scale="0.5 0.5 0.5"></a-entity>
+      </a-marker>
     </a-scene>
 
     <script>
-      const marker = document.querySelector('#marker');
-      const modelTemplate = document.querySelector('#model-template');
-      const fixedContainer = document.querySelector('#fixed-container');
-      let hasFixed = false;
+      const marker = document.querySelector("#hiroMarker");
+      const model = document.querySelector("#chaeiModel");
+      let fixed = false; // 一度でも認識したかどうか
+      let fixedPosition, fixedRotation;
 
-      marker.addEventListener('markerFound', () => {
-        if (!hasFixed) {
-          // 一瞬 visible にして座標を安定させる
-          modelTemplate.setAttribute('visible', 'true');
-
-          setTimeout(() => {
-            // --- ワールド座標を取得 ---
-            const worldPos = new THREE.Vector3();
-            const worldRot = new THREE.Euler();
-            marker.object3D.getWorldPosition(worldPos);
-            marker.object3D.getWorldRotation(worldRot);
-
-            // --- 新しいEntityを作成して固定 ---
-            const fixedModel = document.createElement('a-entity');
-            fixedModel.setAttribute('gltf-model', 'url(models/chaei.glb)');
-            fixedModel.setAttribute('position', `${worldPos.x} ${worldPos.y} ${worldPos.z}`);
-            fixedModel.setAttribute('rotation', 
-              `${THREE.MathUtils.radToDeg(worldRot.x)} ${THREE.MathUtils.radToDeg(worldRot.y)} ${THREE.MathUtils.radToDeg(worldRot.z)}`);
-            fixedModel.setAttribute('scale', '0.5 0.5 0.5');
-            fixedContainer.appendChild(fixedModel);
-
-            hasFixed = true;
-            console.log('✅ モデルをマーカー位置に固定（完全独立）');
-          }, 500);
+      marker.addEventListener("markerFound", () => {
+        if (!fixed) {
+          fixed = true;
+          // 現在位置を保存
+          fixedPosition = model.object3D.position.clone();
+          fixedRotation = model.object3D.rotation.clone();
         }
       });
 
-      marker.addEventListener('markerLost', () => {
-        console.log('ℹ️ マーカー見失い → モデルは独立して保持');
+      marker.addEventListener("markerLost", () => {
+        if (fixed) {
+          // マーカーを離してもモデルを残す
+          model.object3D.position.copy(fixedPosition);
+          model.object3D.rotation.copy(fixedRotation);
+          model.object3D.visible = true;
+        }
       });
     </script>
   </body>
