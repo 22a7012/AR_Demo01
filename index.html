@@ -2,60 +2,35 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>A-Frame + AR.js 固定表示（安定版）</title>
+    <title>A-Frame + AR.js モデル表示</title>
+
+    <!-- A-Frame本体 -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.min.js"></script>
+
+    <!-- AR.js拡張（マーカー式AR用）-->
+    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+    <style>
+      body { margin: 0; overflow: hidden; }
+    </style>
   </head>
 
-  <body style="margin: 0; overflow: hidden;">
-    <a-scene
-      vr-mode-ui="enabled: false;"
-      embedded
-      arjs="sourceType: webcam; debugUIEnabled: false;">
-      
-      <!-- カメラ -->
-      <a-entity camera></a-entity>
-
-      <!-- hiroマーカー -->
-      <a-marker type="pattern" url="hiro.patt" id="marker">
-        <!-- モデルを中に置いておく -->
+  <body>
+    <!-- カメラアクセスを含むAR.jsのシーン -->
+    <a-scene embedded arjs>
+      <!-- Hiroマーカー -->
+      <a-marker type="pattern" url="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/three.js/data/patt.hiro">
+        <!-- モデル配置 -->
         <a-entity 
-          id="tempModel"
-          gltf-model="url(models/chaei.glb)"
-          position="0 0 0"
+          gltf-model="models/chaei.glb"
           scale="0.5 0.5 0.5"
-          visible="true">
+          position="0 0 0"
+          rotation="0 180 0">
         </a-entity>
       </a-marker>
+
+      <!-- カメラ -->
+      <a-entity camera></a-entity>
     </a-scene>
-
-    <script>
-      const marker = document.querySelector("#marker");
-      const scene = document.querySelector("a-scene");
-      const tempModel = document.querySelector("#tempModel");
-
-      let fixedModel = null;
-
-      marker.addEventListener("markerFound", () => {
-        console.log("📸 マーカー検出！");
-        // まだ固定していない場合のみ
-        if (!fixedModel) {
-          const position = tempModel.object3D.getWorldPosition(new THREE.Vector3());
-          const rotation = tempModel.object3D.getWorldRotation(new THREE.Euler());
-
-          // 新しい固定モデルを生成
-          fixedModel = document.createElement("a-entity");
-          fixedModel.setAttribute("gltf-model", "url(models/chaei.glb)");
-          fixedModel.setAttribute("scale", "0.5 0.5 0.5");
-          fixedModel.object3D.position.copy(position);
-          fixedModel.object3D.rotation.copy(rotation);
-
-          // シーン直下に追加（マーカー外）
-          scene.appendChild(fixedModel);
-
-          console.log("📍 モデルを固定しました！");
-        }
-      });
-    </script>
   </body>
 </html>
