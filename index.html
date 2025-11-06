@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <title>A-Frame + AR.js Test</title>
-    <!-- A-Frame本体 -->
+    <!-- A-Frame -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <!-- AR.js拡張 -->
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@master/aframe/build/aframe-ar.js"></script>
+    <!-- AR.js -->
+    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   </head>
 
   <body style="margin: 0; overflow: hidden;">
@@ -14,8 +14,8 @@
       <!-- カメラ -->
       <a-entity camera></a-entity>
 
-      <!-- カスタムコンポーネントで制御 -->
-      <a-marker preset="hiro" emitevents="true" id="hiroMarker" keep-visible>
+      <!-- マーカー -->
+      <a-marker preset="hiro" emitevents="true" id="marker">
         <a-entity 
           id="model"
           gltf-model="url(models/chaei.glb)"
@@ -24,35 +24,38 @@
           scale="0.5 0.5 0.5">
         </a-entity>
       </a-marker>
+
+      <!-- モデルを移す用の空ノード -->
+      <a-entity id="modelHolder"></a-entity>
     </a-scene>
 
     <script>
-      // ---- A-Frameコンポーネント定義 ----
-      AFRAME.registerComponent('keep-visible', {
-        init: function () {
-          const marker = this.el;
+      const marker = document.querySelector("#marker");
+      const model = document.querySelector("#model");
+      const holder = document.querySelector("#modelHolder");
 
-          // マーカーの状態が更新されるたびに呼ばれる
-          marker.addEventListener('markerFound', () => {
-            console.log('✅ マーカー検出');
-            this.setVisible(true);
-          });
+      let modelLocked = false;
 
-          marker.addEventListener('markerLost', () => {
-            console.log('⚠️ マーカー見失ったけど非表示にしない');
-            this.setVisible(true);
-          });
-        },
-        // visible状態を上書きする関数
-        setVisible: function (val) {
-          // 子オブジェクトすべてに適用
-          this.el.object3D.traverse((obj) => {
-            obj.visible = val;
-          });
+      marker.addEventListener("markerFound", () => {
+        console.log("✅ マーカー検出");
+        if (!modelLocked) {
+          // 一度だけマーカーの位置を取得して固定
+          const markerPos = marker.object3D.position.clone();
+          const markerRot = marker.object3D.rotation.clone();
+
+          // モデルをマーカーから切り離して保持用ノードに移動
+          holder.appendChild(model);
+          model.object3D.position.copy(markerPos);
+          model.object3D.rotation.copy(markerRot);
+
+          modelLocked = true;
+          console.log("📌 モデルを固定しました（もう消えません）");
         }
+      });
+
+      marker.addEventListener("markerLost", () => {
+        console.log("⚠️ マーカー見失い — でもモデルは残ります");
       });
     </script>
   </body>
 </html>
-
-
