@@ -2,16 +2,14 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>A-Frame + AR.js 固定表示</title>
-    <!-- A-Frame本体 -->
+    <title>A-Frame + AR.js 固定表示（マーカー基準）</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <!-- AR.js拡張 -->
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
   </head>
 
   <body style="margin: 0; overflow: hidden;">
     <a-scene embedded arjs="sourceType: webcam;">
-      <!-- 🔹 ARマーカー（hiroパターン） -->
+      <!-- マーカー -->
       <a-marker preset="hiro" id="marker" emitevents="true">
         <a-entity 
           id="model"
@@ -29,21 +27,29 @@
     <script>
       const marker = document.querySelector('#marker');
       const model = document.querySelector('#model');
-      let hasShown = false;
+      const scene = document.querySelector('a-scene');
+      let hasFixed = false;
 
       marker.addEventListener('markerFound', () => {
-        if (!hasShown) {
+        if (!hasFixed) {
+          // --- 現在のマーカーの位置・回転を取得 ---
+          const markerPosition = marker.object3D.getWorldPosition(new THREE.Vector3());
+          const markerRotation = marker.object3D.getWorldRotation(new THREE.Euler());
+
+          // --- モデルをシーン直下に複製・固定 ---
+          scene.object3D.attach(model.object3D); // マーカーから切り離してワールド空間に配置
+          model.object3D.position.copy(markerPosition);
+          model.object3D.rotation.copy(markerRotation);
           model.setAttribute('visible', 'true');
-          hasShown = true;
-          console.log('✅ マーカー検出 → モデル表示（固定）');
+
+          hasFixed = true;
+          console.log('✅ モデルをマーカー位置に固定表示');
         }
       });
 
       marker.addEventListener('markerLost', () => {
-        console.log('ℹ️ マーカー見失い → モデル保持');
+        console.log('ℹ️ マーカー見失い → モデルは固定されたまま');
       });
     </script>
   </body>
 </html>
-
-
