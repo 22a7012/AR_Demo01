@@ -2,21 +2,19 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>A-Frame + AR.js Test</title>
-    <!-- A-Frame -->
+    <title>A-Frame + AR.js 固定表示</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <!-- AR.js -->
     <script src="https://cdn.rawgit.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   </head>
 
   <body style="margin: 0; overflow: hidden;">
-    <a-scene embedded arjs>
+    <a-scene embedded arjs="trackingMethod: best;">
       <!-- カメラ -->
-      <a-entity camera></a-entity>
+      <a-entity id="camera" camera></a-entity>
 
       <!-- マーカー -->
       <a-marker preset="hiro" emitevents="true" id="marker">
-        <a-entity 
+        <a-entity
           id="model"
           gltf-model="url(models/chaei.glb)"
           position="0 0 0"
@@ -25,7 +23,7 @@
         </a-entity>
       </a-marker>
 
-      <!-- モデルを移す用の空ノード -->
+      <!-- モデルを保持するノード -->
       <a-entity id="modelHolder"></a-entity>
     </a-scene>
 
@@ -33,29 +31,53 @@
       const marker = document.querySelector("#marker");
       const model = document.querySelector("#model");
       const holder = document.querySelector("#modelHolder");
+      const camera = document.querySelector("#camera");
 
       let modelLocked = false;
+      let lastMarkerMatrix = new THREE.Matrix4();
 
+      // マーカーを見つけたとき
       marker.addEventListener("markerFound", () => {
         console.log("✅ マーカー検出");
+        model.setAttribute("visible", true);
+        modelLocked = false; // 再度トラッキングを許可
+      });
+
+      // マーカーを見失ったとき
+      marker.addEventListener("markerLost", () => {
+        console.log("⚠️ マーカー見失い - モデルを固定します");
+
         if (!modelLocked) {
-          // 一度だけマーカーの位置を取得して固定
-          const markerPos = marker.object3D.position.clone();
-          const markerRot = marker.object3D.rotation.clone();
+          // 現在のマーカー位置・回転・スケールを保持
+          lastMarkerMatrix.copy(marker.object3D.matrixWorld);
 
-          // モデルをマーカーから切り離して保持用ノードに移動
+          // モデルをマーカー階層から外して固定
           holder.appendChild(model);
-          model.object3D.position.copy(markerPos);
-          model.object3D.rotation.copy(markerRot);
 
+          // ワールド座標変換を反映
+          model.object3D.matrix.copy(lastMarkerMatrix);
+          model.object3D.matrix.decompose(
+            model.object3D.position,
+            model.object3D.quaternion,
+            model.object3D.scale
+          );
+
+          // モデルをロック
           modelLocked = true;
-          console.log("📌 モデルを固定しました（もう消えません）");
         }
       });
 
-      marker.addEventListener("markerLost", () => {
-        console.log("⚠️ マーカー見失い — でもモデルは残ります");
+      // 毎フレーム更新：カメラが動いたときも空間に“残ってるように”
+      AFRAME.registerComponent("stay-fixed", {
+        tick: function () {
+          if (modelLocked) {
+            // モデルは固定されたままなので、更新不要。
+            // ただしここで微調整を入れたい場合に使える。
+          }
+        },
       });
+
+      holder.setAttribute("stay-fixed", "");
     </script>
   </body>
 </html>
