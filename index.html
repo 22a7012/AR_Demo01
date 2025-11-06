@@ -6,12 +6,12 @@
     <!-- A-Frame本体 -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <!-- AR.js拡張 -->
-    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
   </head>
 
   <body style="margin: 0; overflow: hidden;">
-    <a-scene embedded arjs>
-      <!-- マーカー -->
+    <a-scene embedded arjs="sourceType: webcam;">
+      <!-- 🔹 ARマーカー（hiroパターン） -->
       <a-marker preset="hiro" id="marker" emitevents="true">
         <a-entity 
           id="model"
@@ -35,15 +35,15 @@
         if (!hasShown) {
           model.setAttribute('visible', 'true');
           hasShown = true;
-          console.log('マーカー検出 → モデル表示（固定）');
+          console.log('✅ マーカー検出 → モデル表示（固定）');
         }
       });
 
       marker.addEventListener('markerLost', () => {
-        // 何もしない（非表示にしない）
-        console.log('マーカー見失い → 何もしない');
+        console.log('ℹ️ マーカー見失い → モデル保持');
       });
     </script>
   </body>
 </html>
+
 
