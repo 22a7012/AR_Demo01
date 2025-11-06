@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>A-Frame + AR.js 固定表示</title>
+    <title>A-Frame + AR.js 固定表示（マーカー保持）</title>
     <!-- A-Frame本体 -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <!-- AR.js拡張 -->
@@ -23,26 +23,50 @@
         </a-entity>
       </a-marker>
 
+      <!-- カメラ -->
       <a-entity camera></a-entity>
     </a-scene>
 
     <script>
       const marker = document.querySelector('#marker');
       const model = document.querySelector('#model');
-      let hasShown = false;
+      const scene = document.querySelector('a-scene');
+      let hasPlaced = false; // モデルを固定したかどうか
+      let fixedModel = null; // マーカーから独立させたモデル
 
       marker.addEventListener('markerFound', () => {
-        if (!hasShown) {
-          model.setAttribute('visible', 'true');
-          hasShown = true;
-          console.log('マーカー検出 → モデル表示（固定）');
+        console.log('✅ マーカー検出');
+
+        // まだ固定されていないときだけ処理
+        if (!hasPlaced) {
+          // ① マーカー上のモデルを取得してクローンする
+          const clone = model.cloneNode(true);
+          clone.setAttribute('id', 'fixedModel');
+          clone.setAttribute('visible', 'true');
+
+          // ② マーカーのワールド座標を取得してクローンに適用
+          const markerPos = new THREE.Vector3();
+          const markerRot = new THREE.Euler();
+          marker.object3D.getWorldPosition(markerPos);
+          marker.object3D.getWorldRotation(markerRot);
+
+          clone.object3D.position.copy(markerPos);
+          clone.object3D.rotation.copy(markerRot);
+
+          // ③ クローンをシーン直下に追加（マーカーの外に出す）
+          scene.appendChild(clone);
+          fixedModel = clone;
+          hasPlaced = true;
+
+          console.log('📍 モデルを固定しました');
         }
       });
 
       marker.addEventListener('markerLost', () => {
-        // 何もしない（非表示にしない）
-        console.log('マーカー見失い → 何もしない');
+        console.log('📡 マーカー見失い → 何もしない（固定モデルは残る）');
       });
     </script>
   </body>
 </html>
+
+
