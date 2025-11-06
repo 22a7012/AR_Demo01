@@ -6,13 +6,16 @@
     <!-- A-Frame本体 -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <!-- AR.js拡張 -->
-    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@master/aframe/build/aframe-ar.js"></script>
   </head>
 
   <body style="margin: 0; overflow: hidden;">
     <a-scene embedded arjs>
-      <!-- マーカー (Hiroマーカー使用) -->
-      <a-marker preset="hiro" emitevents="true" id="hiroMarker">
+      <!-- カメラ -->
+      <a-entity camera></a-entity>
+
+      <!-- カスタムコンポーネントで制御 -->
+      <a-marker preset="hiro" emitevents="true" id="hiroMarker" keep-visible>
         <a-entity 
           id="model"
           gltf-model="url(models/chaei.glb)"
@@ -21,28 +24,35 @@
           scale="0.5 0.5 0.5">
         </a-entity>
       </a-marker>
-
-      <!-- カメラ -->
-      <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-      // --- マーカーとモデルを取得 ---
-      const marker = document.querySelector("#hiroMarker");
-      const model = document.querySelector("#model");
+      // ---- A-Frameコンポーネント定義 ----
+      AFRAME.registerComponent('keep-visible', {
+        init: function () {
+          const marker = this.el;
 
-      // --- マーカーが見つかったとき ---
-      marker.addEventListener("markerFound", () => {
-        console.log("✅ マーカーを検出しました");
-        model.setAttribute("visible", true); // 念のため表示
-      });
+          // マーカーの状態が更新されるたびに呼ばれる
+          marker.addEventListener('markerFound', () => {
+            console.log('✅ マーカー検出');
+            this.setVisible(true);
+          });
 
-      // --- マーカーを見失っても非表示にしない ---
-      marker.addEventListener("markerLost", () => {
-        console.log("⚠️ マーカーを見失いましたが、モデルは表示を維持します");
-        model.setAttribute("visible", true); // 常に表示に戻す
+          marker.addEventListener('markerLost', () => {
+            console.log('⚠️ マーカー見失ったけど非表示にしない');
+            this.setVisible(true);
+          });
+        },
+        // visible状態を上書きする関数
+        setVisible: function (val) {
+          // 子オブジェクトすべてに適用
+          this.el.object3D.traverse((obj) => {
+            obj.visible = val;
+          });
+        }
       });
     </script>
   </body>
 </html>
+
 
